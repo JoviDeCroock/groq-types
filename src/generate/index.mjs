@@ -4,63 +4,15 @@ import t from '@babel/types';
 import traverse from "@babel/traverse";
 import { parse as parseGroq } from "groq-js";
 
+import { findType } from './findType.mjs';
+import { getQueriedFields } from './getQueriedFields.mjs';
+// import { getSchemaGraph } from './getSchemaGraph';
+
 export function generate(code, schema) {
-  // const allTypes = exploreFullSchema(schema);
+  // const allTypes = getSchemaGraph(schema);
   const allTypes = ["Category"];
 
-  function findType(node) {
-    switch (node.type) {
-      case "Filter": {
-        return findType(node.query);
-      }
-      case "OpCall": {
-        switch (node.op) {
-          case "==": {
-            if (
-              node.left.name === "_type" &&
-              allTypes.includes(node.right.value)
-            ) {
-              return node.right.value;
-            }
-            break;
-          }
-          default:
-            return;
-        }
-        break;
-      }
-      default:
-        return;
-    }
-  }
-
-  function getQueriedFields(node, attributes, type) {
-    switch (node.type) {
-      case "Object": {
-        node.attributes.forEach(function (node) {
-          getQueriedFields(node, attributes, type);
-        });
-        break;
-      }
-      case "ObjectAttribute": {
-        // TODO: this should check for identifiers
-        attributes[type] = [
-          ...attributes[type],
-          {
-            alias: node.key.value || node.value.name,
-            attribute: node.value.name
-          }
-        ];
-        break;
-      }
-      default:
-        break;
-    }
-  }
-
-  const ast = parse(code, {
-    sourceType: 'module'
-  });
+  const ast = parse(code, { sourceType: 'module' });
 
   const queries = [];
   traverse.default(ast, {
@@ -71,8 +23,9 @@ export function generate(code, schema) {
         groqQuery = groqQuery.replace(/`/g, "");
         const groqAst = parseGroq(groqQuery);
 
-        // TODO: find out if array or singuiar result
-        const type = findType(groqAst.base);
+        // TODO: find out if array or singular result
+        const isArray = !groqAst.base.index;
+        const type = findType(groqAst, allTypes);
         if (!type) {
           // Warn and return this query was impossible.
           return;
@@ -85,7 +38,7 @@ export function generate(code, schema) {
         // TODO: we start here with base but should expand into relational ones as well;
         const attributes = { [type]: [] };
         // TODO: we should probably account for complexer projections
-        getQueriedFields(groqAst.query, attributes, type);
+        getQueriedFields(groqAst, attributes, type);
 
         const baseAttributes = attributes[type];
         const types = baseAttributes
@@ -113,13 +66,28 @@ export function generate(code, schema) {
             t.tSTypeAnnotation(t.tSStringKeyword())
           );
         });
-        const baseExport = t.exportNamedDeclaration(
-          t.tSTypeAliasDeclaration(
-            t.identifier("GroqQueryResult"),
-            null,
-            t.tSTypeLiteral(members)
-          )
-        );
+
+        let baseExport;
+        if (isArray) {
+          baseExport = t.exportNamedDeclaration(
+            t.tSTypeAliasDeclaration(
+              t.identifier("GroqQueryResult"),
+              null,
+              t.tSTypeReference(
+                t.identifier("Array"),
+                t.tsTypeParameterInstantiation([t.tSTypeLiteral(members)])
+              )
+            )
+          );
+        } else {
+          baseExport = t.exportNamedDeclaration(
+            t.tSTypeAliasDeclaration(
+              t.identifier("GroqQueryResult"),
+              null,
+              t.tSTypeLiteral(members)
+            )
+          );
+        }
 
         queries.push(generateCodeFromAst.default(baseExport).code);
       }
