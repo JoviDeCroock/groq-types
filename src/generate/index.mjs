@@ -1,12 +1,17 @@
 import { parse } from '@babel/parser';
-import generateCodeFromAst from "@babel/generator";
-import t from '@babel/types';
-import traverse from "@babel/traverse";
+import generateCodeFromAstDefault from "@babel/generator";
+import tDefault from '@babel/types';
+import traverseDefault from "@babel/traverse";
 import { parse as parseGroq } from "groq-js";
 
 import { findType } from './findType.mjs';
 import { getQueriedFields } from './getQueriedFields.mjs';
+import { inferDefaultExport } from '../utils.mjs';
 // import { getSchemaGraph } from './getSchemaGraph';
+
+const generateCodeFromAst = inferDefaultExport(generateCodeFromAstDefault)
+const t = inferDefaultExport(tDefault)
+const traverse = inferDefaultExport(traverseDefault)
 
 export function generate(code, schema) {
   // const allTypes = getSchemaGraph(schema);
@@ -15,11 +20,11 @@ export function generate(code, schema) {
   const ast = parse(code, { sourceType: 'module' });
 
   const queries = [];
-  traverse.default(ast, {
+  traverse(ast, {
     TaggedTemplateExpression(path) {
       const tagPath = path.get("tag");
       if (tagPath.node.name === "groq" && tagPath.referencesImport("groq")) {
-        let { code: groqQuery } = generateCodeFromAst.default(path.get("quasi").node);
+        let { code: groqQuery } = generateCodeFromAst(path.get("quasi").node);
         groqQuery = groqQuery.replace(/`/g, "");
         const groqAst = parseGroq(groqQuery);
 
@@ -89,7 +94,7 @@ export function generate(code, schema) {
           );
         }
 
-        queries.push(generateCodeFromAst.default(baseExport).code);
+        queries.push(generateCodeFromAst(baseExport).code);
       }
     }
   });
