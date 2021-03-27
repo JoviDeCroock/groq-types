@@ -12,13 +12,31 @@ test('generate singular non-nested query', () => {
     ${query}
      *[_type == 'Category'][0] {
         _id,
-        "head": name
+        name
      } 
     ${queryEnd}
   `;
 
   const result = generate(program, schema);
-  assert.equal(result.replace(/\n/g, ''), `export type GroqQueryResult = {  _id: string;  head: string;};`);
+  assert.equal(result.replace(/\n/g, ''), `export type GroqQueryResult = {  _id: string;  name: string;};`);
+});
+
+test('generate singular non-nested query with alias', () => {
+  const query = "groq`";
+  const queryEnd = "`";
+  const program = `
+    import groq from 'groq';
+  
+    ${query}
+     *[_type == 'Category'][0] {
+        _id,
+        "header": name
+     } 
+    ${queryEnd}
+  `;
+
+  const result = generate(program, schema);
+  assert.equal(result.replace(/\n/g, ''), `export type GroqQueryResult = {  _id: string;  header: string;};`);
 });
 
 test('generate array non-nested query', () => {
