@@ -1,0 +1,29 @@
+{
+  "name": "groq-types",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "uvu tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JoviDeCroock/groq-types.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/JoviDeCroock/groq-types/issues"
+  },
+  "homepage": "https://github.com/JoviDeCroock/groq-types#readme",
+  "dependencies": {
+    "@babel/generator": "^7.13.9",
+    "@babel/parser": "^7.13.13",
+    "@babel/traverse": "^7.13.13",
+    "@babel/types": "^7.13.13",
+    "groq-js": "^0.2.0"
+  },
+  "devDependencies": {
+    "esm": "^3.2.25",
+    "uvu": "^0.5.1"
+  }
+}
