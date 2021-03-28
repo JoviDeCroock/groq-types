@@ -47,7 +47,6 @@ export function generate(code, schema) {
 
         const attributes = { root: { type, fields: [] } };
         getQueriedFields(groqAst, attributes, type, schema, 'root');
-        console.log(attributes);
         const { root: baseAttributes, ...rest } = attributes;
         const types = {
           root: {
@@ -74,36 +73,37 @@ export function generate(code, schema) {
 
           types[key] = {
             type: entry.type,
+            entry: entry.isExpanded,
             types: convertTypes(rest[key].fields, rest[key].type, sanityDocument)
           }
         });
 
         const getType = (currentTypes, allTypes, isArray) => {
-          return t.tSTypeAnnotation(
-            t.tSTypeLiteral(
-              currentTypes.types.map(x => {
-                const type = allTypes[x.name];
-                console.log(type, x);
-                if (allTypes[x.type]) {
-                  return t.tSPropertySignature(
-                    t.identifier(x.name),
-                    getType(allTypes[x.type], allTypes, x.isArray)
-                  )
-                } else {
-                  return t.tSPropertySignature(
-                    t.identifier(x.name),
-                    getBabelTypeForSanityType(x.type, x.isArray)
-                  );
-                }
-              })
-            )
+          const type = t.tSTypeLiteral(
+            currentTypes.types.map(x => {
+              if (allTypes[x.type] && x.isExpanded) {
+                return t.tSPropertySignature(
+                  t.identifier(x.name),
+                  getType(allTypes[x.type], allTypes, x.isArray)
+                )
+              } else {
+                return t.tSPropertySignature(
+                  t.identifier(x.name),
+                  getBabelTypeForSanityType(x.type, x.isArray)
+                );
+              }
+            })
           )
+          if (isArray) {
+            return t.tSTypeAnnotation(t.tSTypeReference(t.identifier('Array'), t.tsTypeParameterInstantiation([type])));
+          } else {
+            return t.tSTypeAnnotation(type)
+          }
         }
 
         const generateTypes = (currentTypes, allTypes, isArray) => {
           const baseType = t.tSTypeLiteral(currentTypes.types.map(x => {
-            console.log(x);
-            if (allTypes[x.type]) {
+            if (allTypes[x.type] && x.isExpanded) {
               const nestedType = getType(allTypes[x.type], allTypes, x.isArray);
               return t.tSPropertySignature(
                 t.identifier(x.name),

@@ -5,7 +5,7 @@ function extractSplattedFields(schema, type, property, nested) {
 
   let result = {
     [property]: sanityDocument.type === 'object'
-      ? { type, fields: [{ attribute: '_key' }] } // TODO: this is actually only present when the object is requested as an array.
+      ? { type, isExpanded: true, fields: [{ attribute: '_key' }] } // TODO: this is actually only present when the object is requested as an array.
       : {
         type,
         fields: [
@@ -24,7 +24,8 @@ function extractSplattedFields(schema, type, property, nested) {
     } else if (field.type === 'array') {
       result[property].fields.push({ attribute: field.name, isArray: true });
     } else {
-      result[property].fields.push({ attribute: field.name });
+      const sanityDocument = schema.types.find(schemaType => schemaType.name === field.type);
+      result[property].fields.push({ attribute: field.name, isExpanded: sanityDocument.type === 'object' });
       result = {
         ...result,
         ...extractSplattedFields(schema, field.type, field.name, true),
@@ -95,6 +96,7 @@ export function getQueriedFields(node, attributes, type, schema, property) {
         attributes[key] = {
           ...attributes[key],
           type: queried[key].type,
+          isExpanded: queried[key].isExpanded,
           fields: [...(attributes[key] && attributes[key].fields || []), ...queried[key].fields]
         }
       });
@@ -109,6 +111,7 @@ export function getQueriedFields(node, attributes, type, schema, property) {
             {
               alias: node.key.value || node.value.name,
               attribute: node.value.name || node.key.value,
+              isExpanded: true,
             },
           ]
         }

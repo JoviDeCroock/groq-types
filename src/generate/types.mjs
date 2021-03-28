@@ -271,7 +271,7 @@ export function convertTypes(attributes, type, sanityDocument) {
         } else {
           return {
             name: attribute.alias || attribute.attribute || field.name,
-            type: field.of[0].to[0].type,
+            type: field.of[0].type,
             isArray: true,
           };
         }
