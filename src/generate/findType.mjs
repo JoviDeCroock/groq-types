@@ -4,6 +4,10 @@ export function findType(node, allTypes) {
     case "Element": {
       return findType(node.base, allTypes);
     }
+    case "Or":
+    case "And": {
+      return findType(node.left, allTypes) || findType(node.right, allTypes);
+    }
     case "Filter": {
       return findType(node.query, allTypes);
     }

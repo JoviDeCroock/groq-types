@@ -57,25 +57,41 @@ test('generate array non-nested query', () => {
   assert.equal(result.replace(/\n/g, ''), `export type GroqQueryResult = Array<{  _id: string;  head: string;}>;`);
 });
 
-// test('generate array non-nested double claused query', () => {
-//   const query = "groq`";
-//   const queryEnd = "`";
-//   const program = `
-//     import groq from 'groq';
+test('generate array non-nested double claused query', () => {
+  const query = "groq`";
+  const queryEnd = "`";
+  const program = `
+    import groq from 'groq';
   
-//     ${query}
-//      *[_id == 'x' & _type == 'Category'] {
-//         _id,
-//         "head": name
-//      } 
-//     ${queryEnd}
-//   `;
+    ${query}
+     *[_id == 'x' && _type == 'Category'] {
+        _id,
+        "head": name
+     } 
+    ${queryEnd}
+  `;
 
-//   const result = generate(program, schema);
-//   assert.equal(result.replace(/\n/g, ''), `export type GroqQueryResult = Array<{  _id: string;  head: string;}>;`);
-// });
+  const result = generate(program, schema);
+  assert.equal(result.replace(/\n/g, ''), `export type GroqQueryResult = Array<{  _id: string;  head: string;}>;`);
+});
 
-// TODO: ... keyword
+test('spread keyword', () => {
+  const query = "groq`";
+  const queryEnd = "`";
+  const program = `
+    import groq from 'groq';
+  
+    ${query}
+     *[_type == 'Category'] {
+        ...
+     } 
+    ${queryEnd}
+  `;
+
+  const result = generate(program, schema);
+  assert.equal(result.replace(/\n/g, ''), `export type GroqQueryResult = Array<{  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  name: string;  url: string;  visible: boolean;  id: string;  parentCategory: SanityReference;  categories: Array<SanityReference>;  seo: seo;  navChildren: Array<SanityReference>;}>;`);
+});
+
 // TODO: two types
 // TODO: nested into seo field
 // TODO: references
