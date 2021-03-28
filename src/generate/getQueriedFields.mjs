@@ -74,6 +74,8 @@ export function getQueriedFields(node, attributes, type, schema, property) {
       }
       break;
     }
+    // TODO: cast the following to a splat
+    // `*[_type == 'category'] { 'header': name }`
     case 'ObjectSplat': {
       const queried = extractSplattedFields(schema, type, property);
       Object.keys(queried).forEach(function (key) {

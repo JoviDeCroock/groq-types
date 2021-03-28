@@ -4,7 +4,7 @@ import tDefault from '@babel/types';
 import traverseDefault from '@babel/traverse';
 import { parse as parseGroq } from 'groq-js';
 
-import { findType, getBabelTypeForSanityType, convertTypes } from './types.mjs';
+import { findType, getBabelTypeForSanityType } from './types.mjs';
 import { getQueriedFields } from './getQueriedFields.mjs';
 import { inferDefaultExport, capitalize } from '../utils.mjs';
 
@@ -12,9 +12,54 @@ const generateCodeFromAst = inferDefaultExport(generateCodeFromAstDefault);
 const t = inferDefaultExport(tDefault);
 const traverse = inferDefaultExport(traverseDefault);
 
+const objectBaseTypes = [
+  { name: '_key', type: 'string' },
+];
+
+const documentBaseTypes = [
+  { type: 'string', name: '_id' },
+  { type: 'date', name: '_createdAt' },
+  { type: 'date', name: '_udpatedAt' },
+  { type: 'string', name: '_rev' },
+];
+
+const createTypes = (x) => t.tSPropertySignature(
+  t.identifier(x.name),
+  getBabelTypeForSanityType(x.type, x.isArray)
+);
+
+export function generateBaseTypes(schema) {
+  const types = [];
+  schema.types.forEach(schemaType => {
+    if (schemaType.type === 'document') {
+      schemaType.fields.push(...documentBaseTypes);
+    } else if (schemaType.type === 'object') {
+      schemaType.fields.push(...objectBaseTypes);
+    }
+
+    const processedFields = schemaType.fields.map(x => ({
+      name: x.name,
+      // TODO: push these up with an OR SanityReference | RealType
+      type: x.type === 'array' ? x.of[0].type : x.type,
+      isArray: x.type === 'array',
+    }))
+
+    console.log(processedFields);
+    const base = t.exportNamedDeclaration(
+      t.tSTypeAliasDeclaration(
+        t.identifier(schemaType.name),
+        null,
+        t.tSTypeLiteral(processedFields.map(createTypes))
+      )
+    );
+
+    types.push(generateCodeFromAst(base).code);
+  });
+
+  return types.join('\n\n')
+}
+
 export function generate(code, schema) {
-  // TODO: we could eagerly fill out all object-types and extend our base-types with
-  // sanity extenions i.e. object that extends image as name figure that adds an alt.
   const allTypes = schema.types
     .map(schemaType => schemaType.type === 'document' ? schemaType.name : null)
     .filter(Boolean);
@@ -49,33 +94,14 @@ export function generate(code, schema) {
         getQueriedFields(groqAst, attributes, type, schema, 'root');
 
         const { root: baseAttributes, ...rest } = attributes;
-        const types = convertTypes(baseAttributes.fields, baseAttributes.type, sanityDocument);
-        const createTypes = (x) => t.tSPropertySignature(
-          t.identifier(x.name),
-          getBabelTypeForSanityType(x.type, x.isArray)
+
+        const basePick = t.tSTypeReference(
+          t.identifier('Pick'),
+          t.tsTypeParameterInstantiation([
+            t.tSTypeReference(t.identifier(baseAttributes.type)),
+            baseAttributes.fields.length === 1 ? t.tSLiteralType(t.stringLiteral(baseAttributes.fields[0].attribute)) : t.tSUnionType(baseAttributes.fields.map(x => t.tSLiteralType(t.stringLiteral(x.attribute)))),
+          ])
         );
-
-        const additionalTypes = [];
-        Object.entries(rest).forEach(([key, entry]) => {
-          const sanityDocument = schema.types.find(schemaType => schemaType.name === entry.type);
-
-          if (!sanityDocument) {
-            console.warn(
-              `Issues generating type as no "_type" was found for ${key}.`
-            );
-            return;
-          }
-
-          const types = convertTypes(rest[key].fields, rest[key].type, sanityDocument);
-
-          additionalTypes.push(
-            t.tSTypeAliasDeclaration(
-              t.identifier(key),
-              null,
-              t.tSTypeLiteral(types.map(createTypes))
-            )
-          );
-        });
 
         let baseExport;
         if (isArray) {
@@ -86,7 +112,7 @@ export function generate(code, schema) {
               t.tSTypeReference(
                 t.identifier('Array'),
                 t.tsTypeParameterInstantiation([
-                  t.tSTypeLiteral(types.map(createTypes)),
+                  basePick
                 ])
               )
             )
@@ -96,14 +122,10 @@ export function generate(code, schema) {
             t.tSTypeAliasDeclaration(
               t.identifier(queryName),
               null,
-              t.tSTypeLiteral(types.map(createTypes))
+              basePick
             )
           );
         }
-
-        additionalTypes.forEach(typeTree => {
-          queries.push(generateCodeFromAst(typeTree).code);
-        });
 
         queries.push(generateCodeFromAst(baseExport).code);
       }
