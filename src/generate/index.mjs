@@ -81,10 +81,11 @@ export function generate(code, schema) {
         const getType = (currentTypes, allTypes, isArray) => {
           const type = t.tSTypeLiteral(
             currentTypes.types.map(x => {
-              if (allTypes[x.type] && x.isExpanded) {
+              const nes = allTypes[x.type] || allTypes[x.name];
+              if (nes && x.isExpanded) {
                 return t.tSPropertySignature(
                   t.identifier(x.name),
-                  getType(allTypes[x.type], allTypes, x.isArray)
+                  getType(nes, allTypes, x.isArray)
                 )
               } else {
                 return t.tSPropertySignature(
@@ -103,8 +104,9 @@ export function generate(code, schema) {
 
         const generateTypes = (currentTypes, allTypes, isArray) => {
           const baseType = t.tSTypeLiteral(currentTypes.types.map(x => {
-            if (allTypes[x.type] && x.isExpanded) {
-              const nestedType = getType(allTypes[x.type], allTypes, x.isArray);
+            const type = allTypes[x.type] || allTypes[x.name];
+            if (type && x.isExpanded) {
+              const nestedType = getType(type, allTypes, x.isArray);
               return t.tSPropertySignature(
                 t.identifier(x.name),
                 nestedType

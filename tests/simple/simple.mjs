@@ -229,54 +229,54 @@ test('expanding a parent field', () => {
   );
 });
 
-// test('expanding an array-field', () => {
-//   const query = 'groq`';
-//   const queryEnd = '`';
-//   const program = `
-//     import groq from 'groq';
+test('expanding an array-field', () => {
+  const query = 'groq`';
+  const queryEnd = '`';
+  const program = `
+    import groq from 'groq';
 
-//     ${query}
-//      *[_type == "Category"] {
-//         _id,
-//         categories[] => {
-//           _id
-//         }
-//      }
-//     ${queryEnd}
-//   `;
-
-
-//   const result = generate(program, schema);
-//   const types = result.replace(/\n/g, '');
-//   assert.equal(
-//     types,
-//     `export type GroqCategoryQueryResult = Array<{  _id: string; categories: Array<{  _id: string;}>}>;`
-//   );
-// });
-
-// test('expanding an array-field with splat', () => {
-//   const query = 'groq`';
-//   const queryEnd = '`';
-//   const program = `
-//     import groq from 'groq';
-
-//     ${query}
-//      *[_type == "Category"] {
-//         ...,
-//         categories[] => {
-//           ...
-//         }
-//      }
-//     ${queryEnd}
-//   `;
+    ${query}
+     *[_type == "Category"] {
+        _id,
+        categories[] => {
+          _id
+        }
+     }
+    ${queryEnd}
+  `;
 
 
-//   const result = generate(program, schema);
-//   const types = result.replace(/\n/g, '');
-//   assert.equal(
-//     types,
-//     `export type GroqCategoryQueryResult = Array<{}>;`
-//   );
-// });
+  const result = generate(program, schema);
+  const types = result.replace(/\n/g, '');
+  assert.equal(
+    types,
+    `export type GroqCategoryQueryResult = Array<{  _id: string;  categories: Array<{    _id: string;  }>;}>;`
+  );
+});
+
+test('expanding an array-field with splat', () => {
+  const query = 'groq`';
+  const queryEnd = '`';
+  const program = `
+    import groq from 'groq';
+
+    ${query}
+     *[_type == "Category"] {
+        ...,
+        categories[] => {
+          ...
+        }
+     }
+    ${queryEnd}
+  `;
+
+
+  const result = generate(program, schema);
+  const types = result.replace(/\n/g, '');
+  assert.equal(
+    types,
+    `export type GroqCategoryQueryResult = Array<{  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  name: string;  url: string;  visible: boolean;  id: string;  parentCategory: SanityReference;  categories: Array<SanityReference>;  seo: {    _key: string;    pageTitle: string;    pageDescription: string;    _key: string;    pageTitle: string;    pageDescription: string;  };  navChildren: Array<SanityReference>;  categories: Array<{    _id: string;    _updatedAt: Date;    _createdAt: Date;    _rev: string;    name: string;    url: string;    visible: boolean;    id: string;    parentCategory: SanityReference;    categories: Array<SanityReference>;    seo: {      _key: string;      pageTitle: string;      pageDescription: string;      _key: string;      pageTitle: string;      pageDescription: string;    };    navChildren: Array<SanityReference>;  }>;}>;`
+  );
+});
 
 test.run();
