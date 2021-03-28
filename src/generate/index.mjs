@@ -49,7 +49,13 @@ export function generate(code, schema) {
         getQueriedFields(groqAst, attributes, type, schema, 'root');
 
         const { root: baseAttributes, ...rest } = attributes;
-        const types = convertTypes(baseAttributes.fields, baseAttributes.type, sanityDocument);
+        const types = {
+          root: {
+            type: baseAttributes.type,
+            types: convertTypes(baseAttributes.fields, baseAttributes.type, sanityDocument)
+          }
+        }
+
         const createTypes = (x) => t.tSPropertySignature(
           t.identifier(x.name),
           getBabelTypeForSanityType(x.type, x.isArray)
@@ -66,46 +72,74 @@ export function generate(code, schema) {
             return;
           }
 
-          const types = convertTypes(rest[key].fields, rest[key].type, sanityDocument);
-
-          additionalTypes.push(
-            t.tSTypeAliasDeclaration(
-              t.identifier(key),
-              null,
-              t.tSTypeLiteral(types.map(createTypes))
-            )
-          );
+          types[key] = {
+            type: entry.key,
+            types: convertTypes(rest[key].fields, rest[key].type, sanityDocument)
+          }
         });
 
-        let baseExport;
-        if (isArray) {
-          baseExport = t.exportNamedDeclaration(
-            t.tSTypeAliasDeclaration(
-              t.identifier(queryName),
-              null,
-              t.tSTypeReference(
-                t.identifier('Array'),
-                t.tsTypeParameterInstantiation([
-                  t.tSTypeLiteral(types.map(createTypes)),
-                ])
-              )
+        const getType = (currentTypes, allTypes, isArray) => {
+          return t.tSTypeAnnotation(
+            t.tSTypeLiteral(
+              currentTypes.types.map(x => {
+                if (allTypes[x.type]) {
+                  return t.tSPropertySignature(
+                    t.identifier(x.name),
+                    getType(allTypes[x.type], allTypes, x.isArray)
+                  )
+                } else {
+                  return t.tSPropertySignature(
+                    t.identifier(x.name),
+                    getBabelTypeForSanityType(x.type, x.isArray)
+                  );
+                }
+              })
             )
-          );
-        } else {
-          baseExport = t.exportNamedDeclaration(
-            t.tSTypeAliasDeclaration(
-              t.identifier(queryName),
-              null,
-              t.tSTypeLiteral(types.map(createTypes))
-            )
-          );
+          )
         }
 
-        additionalTypes.forEach(typeTree => {
-          queries.push(generateCodeFromAst(typeTree).code);
-        });
+        const generateTypes = (currentTypes, allTypes, isArray) => {
+          const baseType = t.tSTypeLiteral(currentTypes.types.map(x => {
+            if (allTypes[x.type]) {
+              const nestedType = getType(allTypes[x.type], allTypes, x.isArray);
+              return t.tSPropertySignature(
+                t.identifier(x.name),
+                nestedType
+              )
+            } else {
+              return t.tSPropertySignature(
+                t.identifier(x.name),
+                getBabelTypeForSanityType(x.type, x.isArray)
+              );
+            }
+          }));
 
-        queries.push(generateCodeFromAst(baseExport).code);
+          if (isArray) {
+            return t.exportNamedDeclaration(
+              t.tSTypeAliasDeclaration(
+                t.identifier(queryName),
+                null,
+                t.tSTypeReference(
+                  t.identifier('Array'),
+                  t.tsTypeParameterInstantiation([
+                    baseType
+                  ])
+                )
+              )
+            )
+          } else {
+            return t.exportNamedDeclaration(
+              t.tSTypeAliasDeclaration(
+                t.identifier(queryName),
+                null,
+                baseType
+              )
+            )
+          }
+        }
+
+        const baseTypes = generateTypes(types.root, types, isArray)
+        queries.push(generateCodeFromAst(baseTypes).code);
       }
     },
   });

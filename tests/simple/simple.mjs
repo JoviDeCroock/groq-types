@@ -101,14 +101,9 @@ test('spread keyword', () => {
   `;
 
   const result = generate(program, schema);
-  const types = result.replace(/\n/g, '').split('};');
   assert.equal(
-    types[0] + '};',
-    `type seo = {  _key: string;  _updatedAt: Date;  _createdAt: Date;  pageTitle: string;  pageDescription: string;};`
-  );
-  assert.equal(
-    types[1],
-    `export type GroqCategoryQueryResult = Array<{  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  name: string;  url: string;  visible: boolean;  id: string;  parentCategory: SanityReference;  categories: Array<SanityReference>;  seo: seo;  navChildren: Array<SanityReference>;}>;`
+    result.replace(/\n/g, ''),
+    `export type GroqCategoryQueryResult = Array<{  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  name: string;  url: string;  visible: boolean;  id: string;  parentCategory: SanityReference;  categories: Array<SanityReference>;  seo: {    _key: string;    _updatedAt: Date;    _createdAt: Date;    pageTitle: string;    pageDescription: string;  };  navChildren: Array<SanityReference>;}>;`
   );
 });
 
@@ -129,11 +124,9 @@ test('querying from a nested field', () => {
   `;
 
   const result = generate(program, schema);
-  const types = result.replace(/\n/g, '').split('};');
-  assert.equal(types[0] + '};', `type seo = {  pageTitle: string;};`);
   assert.equal(
-    types[1],
-    `export type GroqCategoryQueryResult = Array<{  _id: string;  seo: seo;}>;`
+    result.replace(/\n/g, ''),
+    `export type GroqCategoryQueryResult = Array<{  _id: string;  seo: {    pageTitle: string;  };}>;`
   );
 });
 
@@ -154,14 +147,10 @@ test('querying from a nested splatted field', () => {
   `;
 
   const result = generate(program, schema);
-  const types = result.replace(/\n/g, '').split('};');
+  const types = result.replace(/\n/g, '');
   assert.equal(
-    types[0] + '};',
-    `type seo = {  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  pageTitle: string;  pageDescription: string;};`
-  );
-  assert.equal(
-    types[1],
-    `export type GroqCategoryQueryResult = Array<{  _id: string;  seo: seo;}>;`
+    types,
+    `export type GroqCategoryQueryResult = Array<{  _id: string;  seo: {    _key: string;    _updatedAt: Date;    _createdAt: Date;    pageTitle: string;    pageDescription: string;  };}>;`
   );
 });
 
@@ -183,17 +172,14 @@ test('expanding a field', () => {
 
 
   const result = generate(program, schema);
-  const types = result.replace(/\n/g, '').split('};');
+  const types = result.replace(/\n/g, '');
   assert.equal(
-    types[0] + '};',
-    `type parentCategory = {  _id: string;};`
-  );
-  assert.equal(
-    types[1],
-    `export type GroqCategoryQueryResult = Array<{  _id: string;  parentCategory: parentCategory;}>;`
+    types,
+    `export type GroqCategoryQueryResult = Array<{  _id: string;  parentCategory: {    _id: string;  };}>;`
   );
 });
 
+// TODO: this is not expanding "parentCategory" --> stays SanityReference
 // test('expanding a field with splat', () => {
 //   const query = 'groq`';
 //   const queryEnd = '`';
@@ -212,14 +198,10 @@ test('expanding a field', () => {
 
 
 //   const result = generate(program, schema);
-//   const types = result.replace(/\n/g, '').split('};');
+//   const types = result.replace(/\n/g, '');
 //   assert.equal(
-//     types[0] + '};',
-//     `type parentCategory = {  _id: string;};`
-//   );
-//   assert.equal(
-//     types[1],
-//     `export type GroqCategoryQueryResult = Array<{  _id: string;  parentCategory: parentCategory;}>;`
+//     types,
+//     ``
 //   );
 // });
 
@@ -244,7 +226,7 @@ test('expanding a field', () => {
 //   const types = result.replace(/\n/g, '');
 //   assert.equal(
 //     types,
-//     `export type GroqCategoryQueryResult = Array<{}>;`
+//     `export type GroqCategoryQueryResult = Array<{  _id: string; categories: Array<{  _id: string;}>}>;`
 //   );
 // });
 
@@ -272,8 +254,5 @@ test('expanding a field', () => {
 //     `export type GroqCategoryQueryResult = Array<{}>;`
 //   );
 // });
-
-// Expand array field
-// Splat expanded field
 
 test.run();

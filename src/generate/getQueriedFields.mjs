@@ -4,7 +4,7 @@ function extractSplattedFields(schema, type, property, nested) {
   const sanityDocument = schema.types.find(schemaType => schemaType.name === type);
 
   let result = {
-    [property]: nested
+    [property]: sanityDocument.type === 'object'
       ? { type, fields: [
           { attribute: '_key' },
           { attribute: '_updatedAt' },
