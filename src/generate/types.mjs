@@ -242,7 +242,9 @@ export function getBabelTypeForSanityType(type, isArray) {
 export function convertTypes(attributes, type, sanityDocument) {
   return attributes
     .map(attribute => {
-      const field = sanityDocument.fields.find(sanityField => sanityField.name === attribute.attribute);
+      const field = sanityDocument.fields.find(
+        sanityField => sanityField.name === attribute.attribute
+      );
 
       if (BUILT_IN_FIELDS[attribute.attribute]) {
         return {
@@ -281,7 +283,7 @@ export function convertTypes(attributes, type, sanityDocument) {
         return {
           name: attribute.alias || attribute.attribute || field.name,
           type: type || field.type,
-          isExpanded: !!attribute.isExpanded
+          isExpanded: !!attribute.isExpanded,
         };
       }
     })

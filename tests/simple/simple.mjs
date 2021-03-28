@@ -170,7 +170,6 @@ test('expanding a field', () => {
     ${queryEnd}
   `;
 
-
   const result = generate(program, schema);
   const types = result.replace(/\n/g, '');
   assert.equal(
@@ -200,7 +199,6 @@ test('expanding a field deeply', () => {
      }
     ${queryEnd}
   `;
-
 
   const result = generate(program, schema);
   const types = result.replace(/\n/g, '');
@@ -250,7 +248,6 @@ test('expanding a parent field', () => {
     ${queryEnd}
   `;
 
-
   const result = generate(program, schema);
   const types = result.replace(/\n/g, '');
   assert.equal(
@@ -275,7 +272,6 @@ test('expanding an array-field', () => {
     ${queryEnd}
   `;
 
-
   const result = generate(program, schema);
   const types = result.replace(/\n/g, '');
   assert.equal(
@@ -299,7 +295,6 @@ test('expanding an array-field with splat', () => {
      }
     ${queryEnd}
   `;
-
 
   const result = generate(program, schema);
   const types = result.replace(/\n/g, '');

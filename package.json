@@ -1,20 +1,22 @@
 {
   "name": "groq-types",
   "version": "1.0.0",
-  "description": "",
-  "scripts": {
-    "test": "uvu tests"
-  },
+  "description": "Generating TypeScript types for your Groq queries and Sanity Schema",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JoviDeCroock/groq-types.git"
   },
-  "author": "",
+  "authors": [
+    "Jovi De Croock <decroockjovi@gmail.com>"
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/JoviDeCroock/groq-types/issues"
   },
   "homepage": "https://github.com/JoviDeCroock/groq-types#readme",
+  "scripts": {
+    "test": "uvu tests"
+  },
   "dependencies": {
     "@babel/generator": "^7.13.9",
     "@babel/parser": "^7.13.13",

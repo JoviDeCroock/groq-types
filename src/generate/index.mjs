@@ -24,10 +24,10 @@ const docBase = [
   { type: 'string', name: '_type' },
 ];
 
-const createTypes = (x) => {
+const createTypes = x => {
   const type = t.tSPropertySignature(
     t.identifier(x.name),
-    getBabelTypeForSanityType(x.type, x.isArray),
+    getBabelTypeForSanityType(x.type, x.isArray)
   );
 
   if (typeof x.isRequired === 'boolean') {
@@ -35,7 +35,7 @@ const createTypes = (x) => {
   }
 
   return type;
-}
+};
 
 export function generateBaseTypes(schema) {
   const types = [];
@@ -52,16 +52,16 @@ export function generateBaseTypes(schema) {
         {},
         {
           get: (target, prop) => {
-            if (prop === "_isRequired") {
+            if (prop === '_isRequired') {
               return Boolean(target._isRequired);
             }
 
-            if (prop === "required") {
+            if (prop === 'required') {
               target._isRequired = true;
             }
 
             return () => Rule;
-          }
+          },
         }
       );
 
@@ -70,8 +70,12 @@ export function generateBaseTypes(schema) {
         // TODO: push these up with an OR SanityReference | RealType (multiple types).
         type: x.type === 'array' ? x.of[0].type : x.type,
         isArray: x.type === 'array',
-        isRequired: x.validation ? x.validation(Rule)._isRequired : (docBase.includes(x) || objBase.includes(x)) ? true : false
-      }
+        isRequired: x.validation
+          ? x.validation(Rule)._isRequired
+          : docBase.includes(x) || objBase.includes(x)
+          ? true
+          : false,
+      };
     });
 
     const base = t.exportNamedDeclaration(
@@ -85,15 +89,16 @@ export function generateBaseTypes(schema) {
     types.push(generateCodeFromAst(base).code);
   });
 
-  return types.join('\n\n')
+  return types.join('\n\n');
 }
-
 
 export function generate(code, schema) {
   // TODO: we could eagerly fill out all object-types and extend our base-types with
   // sanity extenions i.e. object that extends image as name figure that adds an alt.
   const allTypes = schema.types
-    .map(schemaType => schemaType.type === 'document' ? schemaType.name : null)
+    .map(schemaType =>
+      schemaType.type === 'document' ? schemaType.name : null
+    )
     .filter(Boolean);
 
   const ast = parse(code, { sourceType: 'module' });
@@ -120,7 +125,9 @@ export function generate(code, schema) {
 
         const queryName = `Groq${capitalize(type)}QueryResult`;
 
-        const sanityDocument = schema.types.find(schemaType => schemaType.name === type);
+        const sanityDocument = schema.types.find(
+          schemaType => schemaType.name === type
+        );
 
         const attributes = { root: { type, fields: [] } };
         getQueriedFields(groqAst, attributes, type, schema, 'root');
@@ -129,13 +136,19 @@ export function generate(code, schema) {
         const types = {
           root: {
             type: baseAttributes.type,
-            types: convertTypes(baseAttributes.fields, baseAttributes.type, sanityDocument)
-          }
-        }
+            types: convertTypes(
+              baseAttributes.fields,
+              baseAttributes.type,
+              sanityDocument
+            ),
+          },
+        };
 
         const additionalTypes = [];
         Object.entries(rest).forEach(([key, entry]) => {
-          const sanityDocument = schema.types.find(schemaType => schemaType.name === entry.type);
+          const sanityDocument = schema.types.find(
+            schemaType => schemaType.name === entry.type
+          );
 
           if (!sanityDocument) {
             console.warn(
@@ -146,8 +159,12 @@ export function generate(code, schema) {
 
           types[key] = {
             type: entry.type,
-            types: convertTypes(rest[key].fields, rest[key].type, sanityDocument)
-          }
+            types: convertTypes(
+              rest[key].fields,
+              rest[key].type,
+              sanityDocument
+            ),
+          };
         });
 
         const getType = (currentTypes, allTypes, isArray, key) => {
@@ -160,8 +177,8 @@ export function generate(code, schema) {
                 const newKey = key + '.' + (nesType ? x.type : x.name);
                 return t.tSPropertySignature(
                   t.identifier(x.name),
-                  getType(nes, allTypes, x.isArray, newKey  )
-                )
+                  getType(nes, allTypes, x.isArray, newKey)
+                );
               } else {
                 return t.tSPropertySignature(
                   t.identifier(x.name),
@@ -169,33 +186,42 @@ export function generate(code, schema) {
                 );
               }
             })
-          )
+          );
           if (isArray) {
-            return t.tSTypeAnnotation(t.tSTypeReference(t.identifier('Array'), t.tsTypeParameterInstantiation([type])));
-          } else {
-            return t.tSTypeAnnotation(type)
-          }
-        }
-
-        const generateTypes = (currentTypes, allTypes, isArray, key = 'root') => {
-          const baseType = t.tSTypeLiteral(currentTypes.types.map(x => {
-            const nesType = allTypes[key + '.' + x.type];
-            const nesName = allTypes[key + '.' + x.name];
-            const nes = nesType || nesName;
-            if (nes && x.isExpanded) {
-              const newKey = key + '.' + (nesType ? x.type : x.name);
-              const nestedType = getType(nes, allTypes, x.isArray, newKey);
-              return t.tSPropertySignature(
-                t.identifier(x.name),
-                nestedType
+            return t.tSTypeAnnotation(
+              t.tSTypeReference(
+                t.identifier('Array'),
+                t.tsTypeParameterInstantiation([type])
               )
-            } else {
-              return t.tSPropertySignature(
-                t.identifier(x.name),
-                getBabelTypeForSanityType(x.type, x.isArray)
-              );
-            }
-          }));
+            );
+          } else {
+            return t.tSTypeAnnotation(type);
+          }
+        };
+
+        const generateTypes = (
+          currentTypes,
+          allTypes,
+          isArray,
+          key = 'root'
+        ) => {
+          const baseType = t.tSTypeLiteral(
+            currentTypes.types.map(x => {
+              const nesType = allTypes[key + '.' + x.type];
+              const nesName = allTypes[key + '.' + x.name];
+              const nes = nesType || nesName;
+              if (nes && x.isExpanded) {
+                const newKey = key + '.' + (nesType ? x.type : x.name);
+                const nestedType = getType(nes, allTypes, x.isArray, newKey);
+                return t.tSPropertySignature(t.identifier(x.name), nestedType);
+              } else {
+                return t.tSPropertySignature(
+                  t.identifier(x.name),
+                  getBabelTypeForSanityType(x.type, x.isArray)
+                );
+              }
+            })
+          );
 
           if (isArray) {
             return t.exportNamedDeclaration(
@@ -204,24 +230,18 @@ export function generate(code, schema) {
                 null,
                 t.tSTypeReference(
                   t.identifier('Array'),
-                  t.tsTypeParameterInstantiation([
-                    baseType
-                  ])
+                  t.tsTypeParameterInstantiation([baseType])
                 )
               )
-            )
+            );
           } else {
             return t.exportNamedDeclaration(
-              t.tSTypeAliasDeclaration(
-                t.identifier(queryName),
-                null,
-                baseType
-              )
-            )
+              t.tSTypeAliasDeclaration(t.identifier(queryName), null, baseType)
+            );
           }
-        }
+        };
 
-        const baseTypes = generateTypes(types.root, types, isArray)
+        const baseTypes = generateTypes(types.root, types, isArray);
         queries.push(generateCodeFromAst(baseTypes).code);
       }
     },

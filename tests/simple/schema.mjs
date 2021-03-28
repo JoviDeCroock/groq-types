@@ -26,5 +26,5 @@ export type seo = {
 };`;
 
 test('generate base types for sanity-schema', () => {
-  assert.equal(generateBaseTypes(schema), snapshot)
+  assert.equal(generateBaseTypes(schema), snapshot);
 });
