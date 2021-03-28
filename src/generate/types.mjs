@@ -264,6 +264,7 @@ export function convertTypes(attributes, type, sanityDocument) {
         if (attribute.isExpanded) {
           return {
             name: attribute.alias || attribute.attribute || field.name,
+            // TODO: push these up with an OR SanityReference | RealType (multiple types).
             type: field.of[0].to[0].type,
             isArray: true,
             isExpanded: true,
@@ -271,6 +272,7 @@ export function convertTypes(attributes, type, sanityDocument) {
         } else {
           return {
             name: attribute.alias || attribute.attribute || field.name,
+            // TODO: push these up with an OR SanityReference | RealType (multiple types).
             type: field.of[0].type,
             isArray: true,
           };

@@ -12,6 +12,55 @@ const generateCodeFromAst = inferDefaultExport(generateCodeFromAstDefault);
 const t = inferDefaultExport(tDefault);
 const traverse = inferDefaultExport(traverseDefault);
 
+const objBase = [
+  { name: '_key', type: 'string' }, // TODO: this is actually only present when the object is requested as an array.
+];
+
+const docBase = [
+  { type: 'string', name: '_id' },
+  { type: 'date', name: '_createdAt' },
+  { type: 'date', name: '_udpatedAt' },
+  { type: 'string', name: '_rev' },
+  { type: 'string', name: '_type' },
+];
+
+const createTypes = (x) => t.tSPropertySignature(
+  t.identifier(x.name),
+  getBabelTypeForSanityType(x.type, x.isArray)
+);
+
+export function generateBaseTypes(schema) {
+  const types = [];
+  schema.types.forEach(schemaType => {
+    const fields = [...schemaType.fields];
+    if (schemaType.type === 'document') {
+      fields.push(...docBase);
+    } else if (schemaType.type === 'object') {
+      fields.push(...objBase);
+    }
+
+    const processedFields = fields.map(x => ({
+      name: x.name,
+      // TODO: push these up with an OR SanityReference | RealType (multiple types).
+      type: x.type === 'array' ? x.of[0].type : x.type,
+      isArray: x.type === 'array',
+    }))
+
+    const base = t.exportNamedDeclaration(
+      t.tSTypeAliasDeclaration(
+        t.identifier(schemaType.name),
+        null,
+        t.tSTypeLiteral(processedFields.map(createTypes))
+      )
+    );
+
+    types.push(generateCodeFromAst(base).code);
+  });
+
+  return types.join('\n\n')
+}
+
+
 export function generate(code, schema) {
   // TODO: we could eagerly fill out all object-types and extend our base-types with
   // sanity extenions i.e. object that extends image as name figure that adds an alt.
@@ -55,11 +104,6 @@ export function generate(code, schema) {
             types: convertTypes(baseAttributes.fields, baseAttributes.type, sanityDocument)
           }
         }
-
-        const createTypes = (x) => t.tSPropertySignature(
-          t.identifier(x.name),
-          getBabelTypeForSanityType(x.type, x.isArray)
-        );
 
         const additionalTypes = [];
         Object.entries(rest).forEach(([key, entry]) => {

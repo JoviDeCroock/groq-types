@@ -92,6 +92,7 @@ export function getQueriedFields(node, attributes, type, schema, property) {
 
         getQueriedFields(node.value, attributes, fieldType, schema, property + '.' + field.name);
       } else if (field.type === 'array') {
+        // TODO: push these up with an OR SanityReference | RealType (multiple types).
         const fieldType = field.of[0].to[0].type;
         if (attributes[property]) {
           const foundIndex = attributes[property].fields.findIndex(x => x.attribute === field.name);
