@@ -5,20 +5,20 @@ function extractSplattedFields(schema, type, property, nested) {
 
   let result = {
     [property]: sanityDocument.type === 'object'
-      ? { type, fields: [
-          { attribute: '_key' },
-          { attribute: '_updatedAt' },
-          { attribute: '_createdAt' },
-        ] }
-      : { type, fields: [
+      ? { type, fields: [{ attribute: '_key' }] } // TODO: this is actually only present when the object is requested as an array.
+      : {
+        type,
+        fields: [
+          { attribute: '_type' },
           { attribute: '_id' },
           { attribute: '_updatedAt' },
           { attribute: '_createdAt' },
           { attribute: '_rev' },
-        ] },
+        ]
+      },
   };
 
-  sanityDocument.fields.forEach(function (field) {
+  sanityDocument.fields.forEach(field => {
     if (TYPE_MAP[field.type]) {
       result[property].fields.push({ attribute: field.name });
     } else if (field.type === 'array') {
@@ -55,7 +55,6 @@ export function getQueriedFields(node, attributes, type, schema, property) {
       const field = sanityDocument.fields.find(x => x.name === (isArray ? node.condition.base.name : node.condition.name));
       if (!field) break;
 
-      // TODO: here we can use the weak-property to signal nullability
       if (field.type === 'reference') {
         const fieldType = field.to[0].type;
         attributes[property] = {
@@ -66,6 +65,22 @@ export function getQueriedFields(node, attributes, type, schema, property) {
             {
               alias: field.name,
               attribute: field.name,
+              isExpanded: true,
+            },
+          ]
+        }
+        getQueriedFields(node.value, attributes, fieldType, schema, field.name);
+      } else if (field.type === 'array') {
+        const fieldType = field.of[0].to[0].type;
+        attributes[property] = {
+          ...attributes[property],
+          type,
+          fields: [
+            ...(attributes[property] && attributes[property].fields || []),
+            {
+              alias: field.name,
+              attribute: field.name,
+              isArray: true,
               isExpanded: true,
             },
           ]

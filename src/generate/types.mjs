@@ -258,13 +258,20 @@ export function convertTypes(attributes, type, sanityDocument) {
         return {
           name: attribute.alias || attribute.attribute || field.name,
           type: field.name,
+          isExpanded: true,
         };
       } else if (attribute.isArray) {
-        if (attribute.expanded) {
+        if (attribute.isExpanded) {
+          return {
+            name: attribute.alias || attribute.attribute || field.name,
+            type: field.of[0].to[0].type,
+            isArray: true,
+            isExpanded: true,
+          };
         } else {
           return {
             name: attribute.alias || attribute.attribute || field.name,
-            type: field.of.map(x => x.type),
+            type: field.of[0].to[0].type,
             isArray: true,
           };
         }
@@ -272,6 +279,7 @@ export function convertTypes(attributes, type, sanityDocument) {
         return {
           name: attribute.alias || attribute.attribute || field.name,
           type: type || field.type,
+          isExpanded: !!attribute.isExpanded
         };
       }
     })

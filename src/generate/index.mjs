@@ -47,7 +47,7 @@ export function generate(code, schema) {
 
         const attributes = { root: { type, fields: [] } };
         getQueriedFields(groqAst, attributes, type, schema, 'root');
-
+        console.log(attributes);
         const { root: baseAttributes, ...rest } = attributes;
         const types = {
           root: {
@@ -73,7 +73,7 @@ export function generate(code, schema) {
           }
 
           types[key] = {
-            type: entry.key,
+            type: entry.type,
             types: convertTypes(rest[key].fields, rest[key].type, sanityDocument)
           }
         });
@@ -82,6 +82,8 @@ export function generate(code, schema) {
           return t.tSTypeAnnotation(
             t.tSTypeLiteral(
               currentTypes.types.map(x => {
+                const type = allTypes[x.name];
+                console.log(type, x);
                 if (allTypes[x.type]) {
                   return t.tSPropertySignature(
                     t.identifier(x.name),
@@ -100,6 +102,7 @@ export function generate(code, schema) {
 
         const generateTypes = (currentTypes, allTypes, isArray) => {
           const baseType = t.tSTypeLiteral(currentTypes.types.map(x => {
+            console.log(x);
             if (allTypes[x.type]) {
               const nestedType = getType(allTypes[x.type], allTypes, x.isArray);
               return t.tSPropertySignature(
