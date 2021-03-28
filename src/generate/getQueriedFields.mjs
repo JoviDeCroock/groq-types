@@ -52,14 +52,24 @@ export function getQueriedFields(node, attributes, type, schema) {
       break;
     }
     case "ObjectAttribute": {
-      // TODO: this should check for identifiers
-      attributes[type] = [
-        ...attributes[type],
-        {
-          alias: node.key.value || node.value.name,
-          attribute: node.value.name
-        }
-      ];
+      if (node.value.type === 'Projection') {
+        attributes[type] = [
+          ...(attributes[type] || []),
+          {
+            alias: node.key.value || node.value.name,
+            attribute: node.value.name || node.key.value
+          }
+        ];
+        getQueriedFields(node.value, attributes, node.key.value, schema);
+      } else {
+        attributes[type] = [
+          ...(attributes[type] || []),
+          {
+            alias: node.key.value || node.value.name,
+            attribute: node.value.name
+          }
+        ];
+      }
       break;
     }
     default:

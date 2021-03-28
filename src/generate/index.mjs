@@ -15,6 +15,10 @@ const generateCodeFromAst = inferDefaultExport(generateCodeFromAstDefault)
 const t = inferDefaultExport(tDefault)
 const traverse = inferDefaultExport(traverseDefault);
 
+function capitalize(str){
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
 function getBabelTypeForSanityType(type, isArray) {
   if (Array.isArray(type)) {
     if (type.length === 1) {
@@ -90,6 +94,47 @@ function getBabelTypeForSanityType(type, isArray) {
   }
 }
 
+function convertTypes(attributes, sanityDocument) {
+  return attributes
+    .map(function (attribute) {
+      const field = sanityDocument.fields.find(function (sanityField) {
+        return sanityField.name === attribute.attribute;
+      });
+
+      if (BUILT_IN_FIELDS[attribute.attribute]) {
+        return {
+          name: attribute.alias || attribute.attribute || field.name,
+          type: BUILT_IN_FIELDS[attribute.attribute],
+        };
+      }
+
+      if (!field) return;
+
+      const type = TYPE_MAP[field.type];
+      if (field.type === 'reference' && attribute.expanded) {
+
+      } else if (attribute.isArray) {
+        if (attribute.expanded) {
+
+        } else {
+          return {
+            name: attribute.alias || attribute.attribute || field.name,
+            type: field.of.map(function (x) { return x.type; }),
+            isArray: true,
+          }
+        }
+
+      } else {
+        return {
+          name: attribute.alias || attribute.attribute || field.name,
+          type: type || field.type,
+        };
+      }
+
+    })
+    .filter(Boolean);
+}
+
 export function generate(code, schema) {
   // const allTypes = getSchemaGraph(schema);
   const allTypes = ["Category"];
@@ -113,6 +158,8 @@ export function generate(code, schema) {
           return;
         }
 
+        const queryName = `Groq${capitalize(type)}QueryResult`;
+
         const sanityDocument = schema.types.find(function (schemaType) {
           return schemaType.name === type;
         });
@@ -123,44 +170,7 @@ export function generate(code, schema) {
         getQueriedFields(groqAst, attributes, type, schema);
 
         const { [type]: baseAttributes, ...rest } = attributes;
-        const types = baseAttributes
-          .map(function (attribute) {
-            const field = sanityDocument.fields.find(function (sanityField) {
-              return sanityField.name === attribute.attribute;
-            });
-
-            if (BUILT_IN_FIELDS[attribute.attribute]) {
-              return {
-                name: attribute.alias || attribute.attribute || field.name,
-                type: BUILT_IN_FIELDS[attribute.attribute],
-              };
-            }
-
-            if (!field) return;
-
-            const type = TYPE_MAP[field.type];
-            if (field.type === 'reference' && attribute.expanded) {
-
-            } else if (attribute.isArray) {
-              if (attribute.expanded) {
-
-              } else {
-                return {
-                  name: attribute.alias || attribute.attribute || field.name,
-                  type: field.of.map(function (x) { return x.type; }),
-                  isArray: true,
-                }
-              }
-
-            } else {
-              return {
-                name: attribute.alias || attribute.attribute || field.name,
-                type: type || field.type,
-              };
-            }
-
-          })
-          .filter(Boolean);
+        const types = convertTypes(baseAttributes, sanityDocument, queryName);
         
         const members = types.map(function (x) {
           return t.tSPropertySignature(
@@ -169,11 +179,35 @@ export function generate(code, schema) {
           );
         });
 
+        const additionalTypes = [];
+        Object.keys(rest).forEach(function(key) {
+          const sanityDocument = schema.types.find(function (schemaType) {
+            return schemaType.name === key;
+          });
+
+          const types = convertTypes(rest[key], sanityDocument);
+
+          const typeMembers = types.map(function (x) {
+            return t.tSPropertySignature(
+              t.identifier(x.name),
+              getBabelTypeForSanityType(x.type, x.isArray)
+            );
+          });
+
+          additionalTypes.push(
+            t.tSTypeAliasDeclaration(
+              t.identifier(`${key}`),
+              null,
+              t.tSTypeLiteral(typeMembers)
+            )
+          )
+        })
+
         let baseExport;
         if (isArray) {
           baseExport = t.exportNamedDeclaration(
             t.tSTypeAliasDeclaration(
-              t.identifier("GroqQueryResult"),
+              t.identifier(queryName),
               null,
               t.tSTypeReference(
                 t.identifier("Array"),
@@ -184,13 +218,16 @@ export function generate(code, schema) {
         } else {
           baseExport = t.exportNamedDeclaration(
             t.tSTypeAliasDeclaration(
-              t.identifier("GroqQueryResult"),
+              t.identifier(queryName),
               null,
               t.tSTypeLiteral(members)
             )
           );
         }
 
+        additionalTypes.forEach(function (typeTree) {
+          queries.push(generateCodeFromAst(typeTree).code);
+        })
         queries.push(generateCodeFromAst(baseExport).code);
       }
     }
