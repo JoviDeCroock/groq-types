@@ -116,9 +116,28 @@ test('querying from a nested field', () => {
   assert.equal(types[1], `export type GroqCategoryQueryResult = Array<{  _id: string;  seo: seo;}>;`);
 });
 
-// TODO: nested into seo field
-// TODO: nested into seo field mixed with splat
-// TODO: references
+test('querying from a nested splatted field', () => {
+  const query = "groq`";
+  const queryEnd = "`";
+  const program = `
+    import groq from 'groq';
+  
+    ${query}
+     *[_type == 'Category'] {
+        _id,
+        seo {
+          ...
+        }
+     } 
+    ${queryEnd}
+  `;
+
+  const result = generate(program, schema);
+  const types = result.replace(/\n/g, '').split('};');
+  assert.equal(types[0]+'};', `type seo = {  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  pageTitle: string;  pageDescription: string;};`);
+  assert.equal(types[1], `export type GroqCategoryQueryResult = Array<{  _id: string;  seo: seo;}>;`);
+});
+
 // TODO: expanded references
 
 test.run();
