@@ -7,7 +7,6 @@ import { parse as parseGroq } from 'groq-js';
 import { findType, getBabelTypeForSanityType, convertTypes } from './types.mjs';
 import { getQueriedFields } from './getQueriedFields.mjs';
 import { inferDefaultExport, capitalize } from '../utils.mjs';
-// import { getSchemaGraph } from './getSchemaGraph';
 
 const generateCodeFromAst = inferDefaultExport(generateCodeFromAstDefault);
 const t = inferDefaultExport(tDefault);
@@ -17,11 +16,7 @@ export function generate(code, schema) {
   // TODO: we could eagerly fill out all object-types and extend our base-types with
   // sanity extenions i.e. object that extends image as name figure that adds an alt.
   const allTypes = schema.types
-    .map(function (schemaType) {
-      if (schemaType.type === 'document') {
-        return schemaType.name;
-      }
-    })
+    .map(schemaType => schemaType.type === 'document' ? schemaType.name : null)
     .filter(Boolean);
 
   const ast = parse(code, { sourceType: 'module' });
@@ -48,28 +43,21 @@ export function generate(code, schema) {
 
         const queryName = `Groq${capitalize(type)}QueryResult`;
 
-        const sanityDocument = schema.types.find(function (schemaType) {
-          return schemaType.name === type;
-        });
+        const sanityDocument = schema.types.find(schemaType => schemaType.name === type);
 
-        const attributes = { [type]: [] };
-        getQueriedFields(groqAst, attributes, type, schema);
+        const attributes = { root: { type, fields: [] } };
+        getQueriedFields(groqAst, attributes, type, schema, 'root');
 
-        const { [type]: baseAttributes, ...rest } = attributes;
-        const types = convertTypes(baseAttributes, sanityDocument, queryName);
-
-        const createTypes = function (x) {
-          return t.tSPropertySignature(
-            t.identifier(x.name),
-            getBabelTypeForSanityType(x.type, x.isArray)
-          );
-        };
+        const { root: baseAttributes, ...rest } = attributes;
+        const types = convertTypes(baseAttributes.fields, baseAttributes.type, sanityDocument);
+        const createTypes = (x) => t.tSPropertySignature(
+          t.identifier(x.name),
+          getBabelTypeForSanityType(x.type, x.isArray)
+        );
 
         const additionalTypes = [];
-        Object.keys(rest).forEach(function (key) {
-          const sanityDocument = schema.types.find(function (schemaType) {
-            return schemaType.name === key;
-          });
+        Object.entries(rest).forEach(([key, entry]) => {
+          const sanityDocument = schema.types.find(schemaType => schemaType.name === entry.type);
 
           if (!sanityDocument) {
             console.warn(
@@ -78,7 +66,7 @@ export function generate(code, schema) {
             return;
           }
 
-          const types = convertTypes(rest[key], sanityDocument);
+          const types = convertTypes(rest[key].fields, rest[key].type, sanityDocument);
 
           additionalTypes.push(
             t.tSTypeAliasDeclaration(
@@ -113,9 +101,10 @@ export function generate(code, schema) {
           );
         }
 
-        additionalTypes.forEach(function (typeTree) {
+        additionalTypes.forEach(typeTree => {
           queries.push(generateCodeFromAst(typeTree).code);
         });
+
         queries.push(generateCodeFromAst(baseExport).code);
       }
     },

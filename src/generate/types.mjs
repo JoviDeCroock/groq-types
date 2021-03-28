@@ -239,12 +239,10 @@ export function getBabelTypeForSanityType(type, isArray) {
   }
 }
 
-export function convertTypes(attributes, sanityDocument) {
+export function convertTypes(attributes, type, sanityDocument) {
   return attributes
-    .map(function (attribute) {
-      const field = sanityDocument.fields.find(function (sanityField) {
-        return sanityField.name === attribute.attribute;
-      });
+    .map(attribute => {
+      const field = sanityDocument.fields.find(sanityField => sanityField.name === attribute.attribute);
 
       if (BUILT_IN_FIELDS[attribute.attribute]) {
         return {
@@ -256,15 +254,17 @@ export function convertTypes(attributes, sanityDocument) {
       if (!field) return;
 
       const type = TYPE_MAP[field.type];
-      if (field.type === 'reference' && attribute.expanded) {
+      if (field.type === 'reference' && attribute.isExpanded) {
+        return {
+          name: attribute.alias || attribute.attribute || field.name,
+          type: field.name,
+        };
       } else if (attribute.isArray) {
         if (attribute.expanded) {
         } else {
           return {
             name: attribute.alias || attribute.attribute || field.name,
-            type: field.of.map(function (x) {
-              return x.type;
-            }),
+            type: field.of.map(x => x.type),
             isArray: true,
           };
         }
