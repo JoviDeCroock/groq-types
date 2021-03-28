@@ -18,6 +18,7 @@ function extractSplattedFields(schema, type, property, nested) {
   };
 
   sanityDocument.fields.forEach(field => {
+    // TOODO: ensure we don't override existing fields due to: id, ..., visible for instance
     if (TYPE_MAP[field.type]) {
       result[property].fields.push({ attribute: field.name });
     } else if (field.type === 'array') {

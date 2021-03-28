@@ -24,10 +24,18 @@ const docBase = [
   { type: 'string', name: '_type' },
 ];
 
-const createTypes = (x) => t.tSPropertySignature(
-  t.identifier(x.name),
-  getBabelTypeForSanityType(x.type, x.isArray)
-);
+const createTypes = (x) => {
+  const type = t.tSPropertySignature(
+    t.identifier(x.name),
+    getBabelTypeForSanityType(x.type, x.isArray),
+  );
+
+  if (typeof x.isRequired === 'boolean') {
+    type.optional = !x.isRequired;
+  }
+
+  return type;
+}
 
 export function generateBaseTypes(schema) {
   const types = [];
@@ -39,12 +47,32 @@ export function generateBaseTypes(schema) {
       fields.push(...objBase);
     }
 
-    const processedFields = fields.map(x => ({
-      name: x.name,
-      // TODO: push these up with an OR SanityReference | RealType (multiple types).
-      type: x.type === 'array' ? x.of[0].type : x.type,
-      isArray: x.type === 'array',
-    }))
+    const processedFields = fields.map(x => {
+      const Rule = new Proxy(
+        {},
+        {
+          get: (target, prop) => {
+            if (prop === "_isRequired") {
+              return Boolean(target._isRequired);
+            }
+
+            if (prop === "required") {
+              target._isRequired = true;
+            }
+
+            return () => Rule;
+          }
+        }
+      );
+
+      return {
+        name: x.name,
+        // TODO: push these up with an OR SanityReference | RealType (multiple types).
+        type: x.type === 'array' ? x.of[0].type : x.type,
+        isArray: x.type === 'array',
+        isRequired: x.validation ? x.validation(Rule)._isRequired : (docBase.includes(x) || objBase.includes(x)) ? true : false
+      }
+    });
 
     const base = t.exportNamedDeclaration(
       t.tSTypeAliasDeclaration(
