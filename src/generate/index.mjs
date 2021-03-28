@@ -34,6 +34,7 @@ export function generate(code, schema) {
         const groqQuery = generateCodeFromAst(
           path.get('quasi').node
         ).code.replace(/`/g, '');
+
         const groqAst = parseGroq(groqQuery);
 
         const isArray = !groqAst.base.index;

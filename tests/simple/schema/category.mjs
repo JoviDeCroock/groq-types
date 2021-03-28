@@ -30,7 +30,7 @@ export default {
       title: 'Parent Category',
       type: 'reference',
       name: 'parentCategory',
-      to: [{ title: 'Category', type: 'category' }],
+      to: [{ title: 'Category', type: 'Category' }],
       hidden: true,
       weak: true,
     },
@@ -41,7 +41,7 @@ export default {
       of: [
         {
           type: 'reference',
-          to: [{ title: 'Category', type: 'category' }],
+          to: [{ title: 'Category', type: 'Category' }],
         },
       ],
       hidden: true,

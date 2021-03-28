@@ -49,6 +49,40 @@ export function getQueriedFields(node, attributes, type, schema) {
       });
       break;
     }
+    // case 'ObjectConditionalSplat': {
+    //   const sanityDocument = schema.types.find(function (schemaType) {
+    //     return schemaType.name === type;
+    //   });
+
+    //   if (!sanityDocument) {
+    //     // UH-OH
+    //     break;
+    //   }
+
+    //   const field = sanityDocument.fields.find(x => x.name === node.condition.name);
+
+    //   if (!field) {
+    //     // UH-OH
+    //     break;
+    //   }
+
+    //   // TODO: here we can use the weak-property to signal nullability
+    //   if (field.type === 'reference') {
+    //     const fieldType = field.to[0].type;
+    //     attributes[type] = [
+    //       ...(attributes[type] || []),
+    //       {
+    //         alias: fieldType,
+    //         attribute: fieldType,
+    //         isExpanded: true,
+    //       },
+    //     ];
+    //     getQueriedFields(node.value, attributes, fieldType, schema);
+    //   } else {
+    //     getQueriedFields(node.value, attributes, field.type, schema);
+    //   }
+    //   break;
+    // }
     case 'ObjectSplat': {
       const queried = extractSplattedFields(schema, type);
       Object.keys(queried).forEach(function (key) {
