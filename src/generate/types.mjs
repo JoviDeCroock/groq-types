@@ -2,26 +2,26 @@ import tDefault from '@babel/types';
 import { BUILT_IN_FIELDS, TYPE_MAP } from './constants.mjs';
 import { inferDefaultExport } from '../utils.mjs';
 
-const t = inferDefaultExport(tDefault)
+const t = inferDefaultExport(tDefault);
 
 export function findType(node, allTypes) {
   switch (node.type) {
-    case "Projection":
-    case "Element": {
+    case 'Projection':
+    case 'Element': {
       return findType(node.base, allTypes);
     }
-    case "Or":
-    case "And": {
+    case 'Or':
+    case 'And': {
       return findType(node.left, allTypes) || findType(node.right, allTypes);
     }
-    case "Filter": {
+    case 'Filter': {
       return findType(node.query, allTypes);
     }
-    case "OpCall": {
+    case 'OpCall': {
       switch (node.op) {
-        case "==": {
+        case '==': {
           if (
-            node.left.name === "_type" &&
+            node.left.name === '_type' &&
             allTypes.includes(node.right.value)
           ) {
             return node.right.value;
@@ -51,32 +51,38 @@ export function getBabelTypeForSanityType(type, isArray) {
       case 'url':
       case 'string': {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSStringKeyword()]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([t.tSStringKeyword()])
+            )
+          );
         } else {
-          return t.tSTypeAnnotation(t.tSStringKeyword())
+          return t.tSTypeAnnotation(t.tSStringKeyword());
         }
       }
       case 'number': {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSNumberKeyword()]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([t.tSNumberKeyword()])
+            )
+          );
         } else {
-          return t.tSTypeAnnotation(t.tSNumberKeyword())
+          return t.tSTypeAnnotation(t.tSNumberKeyword());
         }
       }
       case 'boolean': {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSBooleanKeyword()]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([t.tSBooleanKeyword()])
+            )
+          );
         } else {
-          return t.tSTypeAnnotation(t.tSBooleanKeyword())
+          return t.tSTypeAnnotation(t.tSBooleanKeyword());
         }
       }
       case 'datetime':
@@ -84,10 +90,14 @@ export function getBabelTypeForSanityType(type, isArray) {
       case 'date':
       case 'Date': {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSTypeReference(t.identifier('Date'))]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([
+                t.tSTypeReference(t.identifier('Date')),
+              ])
+            )
+          );
         } else {
           return t.tSTypeAnnotation(t.tSTypeReference(t.identifier('Date')));
         }
@@ -95,86 +105,132 @@ export function getBabelTypeForSanityType(type, isArray) {
       case 'reference':
       case 'SanityReference': {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSTypeReference(t.identifier('SanityReference'))]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([
+                t.tSTypeReference(t.identifier('SanityReference')),
+              ])
+            )
+          );
         } else {
-          return t.tSTypeAnnotation(t.tSTypeReference(t.identifier('SanityReference')));
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(t.identifier('SanityReference'))
+          );
         }
       }
       case 'block':
       case 'SanityBlock': {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSTypeReference(t.identifier('SanityBlock'))]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([
+                t.tSTypeReference(t.identifier('SanityBlock')),
+              ])
+            )
+          );
         } else {
-          return t.tSTypeAnnotation(t.tSTypeReference(t.identifier('SanityBlock')));
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(t.identifier('SanityBlock'))
+          );
         }
       }
       case 'file':
       case 'SanityFile': {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSTypeReference(t.identifier('SanityFile'))]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([
+                t.tSTypeReference(t.identifier('SanityFile')),
+              ])
+            )
+          );
         } else {
-          return t.tSTypeAnnotation(t.tSTypeReference(t.identifier('SanityFile')));
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(t.identifier('SanityFile'))
+          );
         }
       }
       case 'geopoint':
       case 'SanityGeoPoint': {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSTypeReference(t.identifier('SanityGeoPoint'))]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([
+                t.tSTypeReference(t.identifier('SanityGeoPoint')),
+              ])
+            )
+          );
         } else {
-          return t.tSTypeAnnotation(t.tSTypeReference(t.identifier('SanityGeoPoint')));
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(t.identifier('SanityGeoPoint'))
+          );
         }
       }
       case 'image':
       case 'SanityImage': {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSTypeReference(t.identifier('SanityImage'))]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([
+                t.tSTypeReference(t.identifier('SanityImage')),
+              ])
+            )
+          );
         } else {
-          return t.tSTypeAnnotation(t.tSTypeReference(t.identifier('SanityImage')));
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(t.identifier('SanityImage'))
+          );
         }
       }
       case 'slug':
       case 'SanitySlug': {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSTypeReference(t.identifier('SanitySlug'))]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([
+                t.tSTypeReference(t.identifier('SanitySlug')),
+              ])
+            )
+          );
         } else {
-          return t.tSTypeAnnotation(t.tSTypeReference(t.identifier('SanitySlug')));
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(t.identifier('SanitySlug'))
+          );
         }
       }
       case 'span':
       case 'SanitySpan': {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSTypeReference(t.identifier('SanitySpan'))]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([
+                t.tSTypeReference(t.identifier('SanitySpan')),
+              ])
+            )
+          );
         } else {
-          return t.tSTypeAnnotation(t.tSTypeReference(t.identifier('SanitySpan')));
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(t.identifier('SanitySpan'))
+          );
         }
       }
       default: {
         if (isArray) {
-          return t.tSTypeAnnotation(t.tSTypeReference(
-            t.identifier("Array"),
-            t.tsTypeParameterInstantiation([t.tSTypeReference(t.identifier(type))]))
-          )
+          return t.tSTypeAnnotation(
+            t.tSTypeReference(
+              t.identifier('Array'),
+              t.tsTypeParameterInstantiation([
+                t.tSTypeReference(t.identifier(type)),
+              ])
+            )
+          );
         } else {
           return t.tSTypeAnnotation(t.tSTypeReference(t.identifier(type)));
         }
@@ -182,7 +238,6 @@ export function getBabelTypeForSanityType(type, isArray) {
     }
   }
 }
-
 
 export function convertTypes(attributes, sanityDocument) {
   return attributes
@@ -202,25 +257,23 @@ export function convertTypes(attributes, sanityDocument) {
 
       const type = TYPE_MAP[field.type];
       if (field.type === 'reference' && attribute.expanded) {
-
       } else if (attribute.isArray) {
         if (attribute.expanded) {
-
         } else {
           return {
             name: attribute.alias || attribute.attribute || field.name,
-            type: field.of.map(function (x) { return x.type; }),
+            type: field.of.map(function (x) {
+              return x.type;
+            }),
             isArray: true,
-          }
+          };
         }
-
       } else {
         return {
           name: attribute.alias || attribute.attribute || field.name,
           type: type || field.type,
         };
       }
-
     })
     .filter(Boolean);
 }

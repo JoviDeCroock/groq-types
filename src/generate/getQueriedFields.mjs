@@ -1,4 +1,4 @@
-import { TYPE_MAP } from "./constants.mjs";
+import { TYPE_MAP } from './constants.mjs';
 
 function extractSplattedFields(schema, type, nested) {
   const sanityDocument = schema.types.find(function (schemaType) {
@@ -6,26 +6,31 @@ function extractSplattedFields(schema, type, nested) {
   });
 
   let result = {
-    [type]: nested ? [
-      { attribute: '_key' },
-      { attribute: '_updatedAt' },
-      { attribute: '_createdAt' },
-    ] : [
-      { attribute: '_id' },
-      { attribute: '_updatedAt' },
-      { attribute: '_createdAt' },
-      { attribute: '_rev' },
-    ]
+    [type]: nested
+      ? [
+          { attribute: '_key' },
+          { attribute: '_updatedAt' },
+          { attribute: '_createdAt' },
+        ]
+      : [
+          { attribute: '_id' },
+          { attribute: '_updatedAt' },
+          { attribute: '_createdAt' },
+          { attribute: '_rev' },
+        ],
   };
-  
-  sanityDocument.fields.forEach(function(field) {
+
+  sanityDocument.fields.forEach(function (field) {
     if (TYPE_MAP[field.type]) {
       result[type].push({ attribute: field.name });
     } else if (field.type === 'array') {
       result[type].push({ attribute: field.name, isArray: true });
     } else {
       result[type].push({ attribute: field.name });
-      result = { ...result, ...extractSplattedFields(schema, field.type, true) };
+      result = {
+        ...result,
+        ...extractSplattedFields(schema, field.type, true),
+      };
     }
   });
 
@@ -34,11 +39,11 @@ function extractSplattedFields(schema, type, nested) {
 
 export function getQueriedFields(node, attributes, type, schema) {
   switch (node.type) {
-    case "Projection": {
+    case 'Projection': {
       getQueriedFields(node.query, attributes, type, schema);
       break;
     }
-    case "Object": {
+    case 'Object': {
       node.attributes.forEach(function (node) {
         getQueriedFields(node, attributes, type, schema);
       });
@@ -51,14 +56,14 @@ export function getQueriedFields(node, attributes, type, schema) {
       });
       break;
     }
-    case "ObjectAttribute": {
+    case 'ObjectAttribute': {
       if (node.value.type === 'Projection') {
         attributes[type] = [
           ...(attributes[type] || []),
           {
             alias: node.key.value || node.value.name,
-            attribute: node.value.name || node.key.value
-          }
+            attribute: node.value.name || node.key.value,
+          },
         ];
         getQueriedFields(node.value, attributes, node.key.value, schema);
       } else {
@@ -66,8 +71,8 @@ export function getQueriedFields(node, attributes, type, schema) {
           ...(attributes[type] || []),
           {
             alias: node.key.value || node.value.name,
-            attribute: node.value.name
-          }
+            attribute: node.value.name,
+          },
         ];
       }
       break;

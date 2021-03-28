@@ -111,5 +111,5 @@ export const TYPE_MAP = {
   string: 'string',
   span: 'SanitySpan',
   text: 'string',
-  url: 'string'
-}
+  url: 'string',
+};
