@@ -2,7 +2,6 @@ import { TYPE_MAP } from './constants.mjs';
 
 function extractSplattedFields(schema, type, property, nested) {
   const sanityDocument = schema.types.find(schemaType => schemaType.name === type);
-
   let result = {
     [property]: sanityDocument.type === 'object'
       ? { type, isExpanded: true, fields: [{ attribute: '_key' }] } // TODO: this is actually only present when the object is requested as an array.
@@ -28,7 +27,7 @@ function extractSplattedFields(schema, type, property, nested) {
       result[property].fields.push({ attribute: field.name, isExpanded: sanityDocument.type === 'object' });
       result = {
         ...result,
-        ...extractSplattedFields(schema, field.type, field.name, true),
+        ...extractSplattedFields(schema, field.type, property + '.' + field.name, true),
       };
     }
   });
@@ -58,35 +57,78 @@ export function getQueriedFields(node, attributes, type, schema, property) {
 
       if (field.type === 'reference') {
         const fieldType = field.to[0].type;
-        attributes[property] = {
-          ...attributes[property],
-          type,
-          fields: [
-            ...(attributes[property] && attributes[property].fields || []),
-            {
+        if (attributes[property]) {
+          const foundIndex = attributes[property].fields.findIndex(x => x.attribute === field.name);
+          if (foundIndex === -1) {
+            attributes[property].fields.push({
               alias: field.name,
               attribute: field.name,
               isExpanded: true,
-            },
-          ]
+            })
+          } else {
+            attributes[property].fields[foundIndex] = {
+              ...attributes[property].fields[foundIndex],
+              ...({
+                alias: field.name,
+                attribute: field.name,
+                isExpanded: true,
+              }),
+            }
+          }
+        } else {
+          attributes[property] = {
+            ...attributes[property],
+            type,
+            fields: [
+              ...(attributes[property] && attributes[property].fields || []),
+              {
+                alias: field.name,
+                attribute: field.name,
+                isExpanded: true,
+              },
+            ]
+          }
         }
-        getQueriedFields(node.value, attributes, fieldType, schema, field.name);
+
+        getQueriedFields(node.value, attributes, fieldType, schema, property + '.' + field.name);
       } else if (field.type === 'array') {
         const fieldType = field.of[0].to[0].type;
-        attributes[property] = {
-          ...attributes[property],
-          type,
-          fields: [
-            ...(attributes[property] && attributes[property].fields || []),
-            {
+        if (attributes[property]) {
+          const foundIndex = attributes[property].fields.findIndex(x => x.attribute === field.name);
+          if (foundIndex === -1) {
+            attributes[property].fields.push({
               alias: field.name,
               attribute: field.name,
-              isArray: true,
               isExpanded: true,
-            },
-          ]
+              isArray: true,
+            })
+          } else {
+            attributes[property].fields[foundIndex] = {
+              ...attributes[property].fields[foundIndex],
+              ...({
+                alias: field.name,
+                attribute: field.name,
+                isExpanded: true,
+                isArray: true,
+              }),
+            }
+          }
+        } else {
+          attributes[property] = {
+            ...attributes[property],
+            type,
+            fields: [
+              ...(attributes[property] && attributes[property].fields || []),
+              {
+                alias: field.name,
+                attribute: field.name,
+                isExpanded: true,
+                isArray: true,
+              },
+            ]
+          }
         }
-        getQueriedFields(node.value, attributes, fieldType, schema, field.name);
+        getQueriedFields(node.value, attributes, fieldType, schema, property + '.' + field.name);
       }
       break;
     }
@@ -115,18 +157,36 @@ export function getQueriedFields(node, attributes, type, schema, property) {
             },
           ]
         }
-        getQueriedFields(node.value, attributes, node.key.value, schema, node.key.value || node.value.name);
+        getQueriedFields(node.value, attributes, node.key.value, schema, `${property}.` + (node.key.value || node.value.name));
       } else {
-        attributes[property] = {
-          ...attributes[property],
-          type,
-          fields: [
-            ...(attributes[property] && attributes[property].fields || []),
-            {
+        if (attributes[property]) {
+          const foundIndex = attributes[property].fields.findIndex(x => x.attribute === (node.value.name || node.key.value));
+          if (foundIndex === -1) {
+            attributes[property].fields.push({
               alias: node.key.value || node.value.name,
               attribute: node.value.name || node.key.value,
-            },
-          ]
+            })
+          } else {
+            attributes[property].fields[foundIndex] = {
+              ...attributes[property].fields[foundIndex],
+              ...({
+                alias: node.key.value || node.value.name,
+                attribute: node.value.name || node.key.value,
+              }),
+            }
+          }
+        } else {
+          attributes[property] = {
+            ...attributes[property],
+            type,
+            fields: [
+              ...(attributes[property] && attributes[property].fields || []),
+              {
+                alias: node.key.value || node.value.name,
+                attribute: node.value.name || node.key.value,
+              },
+            ]
+          }
         }
       }
       break;

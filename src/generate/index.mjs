@@ -47,6 +47,7 @@ export function generate(code, schema) {
 
         const attributes = { root: { type, fields: [] } };
         getQueriedFields(groqAst, attributes, type, schema, 'root');
+
         const { root: baseAttributes, ...rest } = attributes;
         const types = {
           root: {
@@ -73,19 +74,21 @@ export function generate(code, schema) {
 
           types[key] = {
             type: entry.type,
-            entry: entry.isExpanded,
             types: convertTypes(rest[key].fields, rest[key].type, sanityDocument)
           }
         });
 
-        const getType = (currentTypes, allTypes, isArray) => {
+        const getType = (currentTypes, allTypes, isArray, key) => {
           const type = t.tSTypeLiteral(
             currentTypes.types.map(x => {
-              const nes = allTypes[x.type] || allTypes[x.name];
+              const nesType = allTypes[key + '.' + x.type];
+              const nesName = allTypes[key + '.' + x.name];
+              const nes = nesType || nesName;
               if (nes && x.isExpanded) {
+                const newKey = key + '.' + (nesType ? x.type : x.name);
                 return t.tSPropertySignature(
                   t.identifier(x.name),
-                  getType(nes, allTypes, x.isArray)
+                  getType(nes, allTypes, x.isArray, newKey  )
                 )
               } else {
                 return t.tSPropertySignature(
@@ -102,11 +105,14 @@ export function generate(code, schema) {
           }
         }
 
-        const generateTypes = (currentTypes, allTypes, isArray) => {
+        const generateTypes = (currentTypes, allTypes, isArray, key = 'root') => {
           const baseType = t.tSTypeLiteral(currentTypes.types.map(x => {
-            const type = allTypes[x.type] || allTypes[x.name];
-            if (type && x.isExpanded) {
-              const nestedType = getType(type, allTypes, x.isArray);
+            const nesType = allTypes[key + '.' + x.type];
+            const nesName = allTypes[key + '.' + x.name];
+            const nes = nesType || nesName;
+            if (nes && x.isExpanded) {
+              const newKey = key + '.' + (nesType ? x.type : x.name);
+              const nestedType = getType(nes, allTypes, x.isArray, newKey);
               return t.tSPropertySignature(
                 t.identifier(x.name),
                 nestedType

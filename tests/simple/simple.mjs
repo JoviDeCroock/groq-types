@@ -179,6 +179,37 @@ test('expanding a field', () => {
   );
 });
 
+test('expanding a field deeply', () => {
+  const query = 'groq`';
+  const queryEnd = '`';
+  const program = `
+    import groq from 'groq';
+
+    ${query}
+     *[_type == "Category"] {
+        _id,
+        parentCategory => {
+          _id,
+          parentCategory => {
+            visible,
+            parentCategory => {
+              id
+            }
+          }
+        }
+     }
+    ${queryEnd}
+  `;
+
+
+  const result = generate(program, schema);
+  const types = result.replace(/\n/g, '');
+  assert.equal(
+    types,
+    `export type GroqCategoryQueryResult = Array<{  _id: string;  parentCategory: {    _id: string;    parentCategory: {      visible: boolean;      parentCategory: {        id: string;      };    };  };}>;`
+  );
+});
+
 test('expanding a field with splat', () => {
   const query = 'groq`';
   const queryEnd = '`';
@@ -195,12 +226,11 @@ test('expanding a field with splat', () => {
     ${queryEnd}
   `;
 
-
   const result = generate(program, schema);
   const types = result.replace(/\n/g, '');
   assert.equal(
     types,
-    `export type GroqCategoryQueryResult = Array<{  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  name: string;  url: string;  visible: boolean;  id: string;  parentCategory: SanityReference;  categories: Array<SanityReference>;  seo: {    _key: string;    pageTitle: string;    pageDescription: string;    _key: string;    pageTitle: string;    pageDescription: string;  };  navChildren: Array<SanityReference>;  parentCategory: {    _id: string;    _updatedAt: Date;    _createdAt: Date;    _rev: string;    name: string;    url: string;    visible: boolean;    id: string;    parentCategory: SanityReference;    categories: Array<SanityReference>;    seo: {      _key: string;      pageTitle: string;      pageDescription: string;      _key: string;      pageTitle: string;      pageDescription: string;    };    navChildren: Array<SanityReference>;  };}>;`
+    `export type GroqCategoryQueryResult = Array<{  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  name: string;  url: string;  visible: boolean;  id: string;  parentCategory: {    _id: string;    _updatedAt: Date;    _createdAt: Date;    _rev: string;    name: string;    url: string;    visible: boolean;    id: string;    parentCategory: SanityReference;    categories: Array<SanityReference>;    seo: {      _key: string;      pageTitle: string;      pageDescription: string;    };    navChildren: Array<SanityReference>;  };  categories: Array<SanityReference>;  seo: {    _key: string;    pageTitle: string;    pageDescription: string;  };  navChildren: Array<SanityReference>;}>;`
   );
 });
 
@@ -225,7 +255,7 @@ test('expanding a parent field', () => {
   const types = result.replace(/\n/g, '');
   assert.equal(
     types,
-    `export type GroqCategoryQueryResult = Array<{  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  name: string;  url: string;  visible: boolean;  id: string;  parentCategory: SanityReference;  categories: Array<SanityReference>;  seo: {    _key: string;    pageTitle: string;    pageDescription: string;  };  navChildren: Array<SanityReference>;  parentCategory: {    _id: string;  };}>;`
+    `export type GroqCategoryQueryResult = Array<{  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  name: string;  url: string;  visible: boolean;  id: string;  parentCategory: {    _id: string;  };  categories: Array<SanityReference>;  seo: {    _key: string;    pageTitle: string;    pageDescription: string;  };  navChildren: Array<SanityReference>;}>;`
   );
 });
 
@@ -275,7 +305,7 @@ test('expanding an array-field with splat', () => {
   const types = result.replace(/\n/g, '');
   assert.equal(
     types,
-    `export type GroqCategoryQueryResult = Array<{  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  name: string;  url: string;  visible: boolean;  id: string;  parentCategory: SanityReference;  categories: Array<SanityReference>;  seo: {    _key: string;    pageTitle: string;    pageDescription: string;    _key: string;    pageTitle: string;    pageDescription: string;  };  navChildren: Array<SanityReference>;  categories: Array<{    _id: string;    _updatedAt: Date;    _createdAt: Date;    _rev: string;    name: string;    url: string;    visible: boolean;    id: string;    parentCategory: SanityReference;    categories: Array<SanityReference>;    seo: {      _key: string;      pageTitle: string;      pageDescription: string;      _key: string;      pageTitle: string;      pageDescription: string;    };    navChildren: Array<SanityReference>;  }>;}>;`
+    `export type GroqCategoryQueryResult = Array<{  _id: string;  _updatedAt: Date;  _createdAt: Date;  _rev: string;  name: string;  url: string;  visible: boolean;  id: string;  parentCategory: SanityReference;  categories: Array<{    _id: string;    _updatedAt: Date;    _createdAt: Date;    _rev: string;    name: string;    url: string;    visible: boolean;    id: string;    parentCategory: SanityReference;    categories: Array<SanityReference>;    seo: {      _key: string;      pageTitle: string;      pageDescription: string;    };    navChildren: Array<SanityReference>;  }>;  seo: {    _key: string;    pageTitle: string;    pageDescription: string;  };  navChildren: Array<SanityReference>;}>;`
   );
 });
 
